@@ -213,7 +213,7 @@ export default function SearchPage() {
                   {categories.slice(0, 8).map((category) => (
                     <Link
                       key={category.id}
-                      href={`/category/${category.slug}`}
+                      href={`/category/${category.id}`}
                       className="group bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow text-center"
                     >
                       <img

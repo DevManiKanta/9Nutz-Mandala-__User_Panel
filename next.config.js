@@ -10,8 +10,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true, // ✅ Skip TS errors if any
   },
-  output: isStaticExport ? "export" : undefined,
-  // output: "export",
+  // output: isStaticExport ? "export" : undefined,
+  output: "export",
   images: {
     unoptimized: true, 
   },

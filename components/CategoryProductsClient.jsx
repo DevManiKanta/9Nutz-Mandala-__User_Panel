@@ -366,12 +366,14 @@ export default function CategoryProductsClient({ identifier }) {
               No products in this category.
             </div>
           ) : (
-            products.map((p) => (
+            products.map((p) => {
+              const pid = String(p.id ?? p.product_id ?? p._id ?? "");
+              return (
               <article
-                key={p.id}
+                key={pid || Math.random()}
                 className="bg-white rounded-lg shadow-sm overflow-hidden"
               >
-                <Link href={`/product/${p.id}`} className="block">
+                <Link href={pid ? `/product/${pid}` : "#"} className="block" prefetch={false}>
                   <div className="w-full h-48 bg-gray-100 overflow-hidden flex items-center justify-center">
                     <img
                       src={
@@ -415,7 +417,8 @@ export default function CategoryProductsClient({ identifier }) {
                   </div>
                 </Link>
               </article>
-            ))
+            );
+            })
           )}
         </div>
       </section>

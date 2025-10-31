@@ -78,7 +78,7 @@ export default function CategoryClientPage({ category, categoryProducts, slug })
               {category.subcategories.map((subcategory) => (
                 <Link
                   key={subcategory.id}
-                  href={`/category/${category.slug}/${subcategory.slug}`}
+                  href={`/category/${category.id}/${subcategory.id}`}
                   className="group text-center p-4 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="w-16 h-16 bg-gray-100 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:bg-green-50 transition-colors">
