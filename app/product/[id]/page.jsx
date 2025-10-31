@@ -78,9 +78,20 @@
 //   );
 // }
 
-export const dynamic = "force-dynamic";
 import React from "react";
 import ProductPageClient from "@/app/product/ProductPageClient";
+
+// Required for static export
+export async function generateStaticParams() {
+  // Add some sample product IDs - you can expand this list or fetch from API
+  return [
+    { id: "1" },
+    { id: "2" },
+    { id: "3" },
+    { id: "4" },
+    { id: "5" },
+  ];
+}
 
 export default function ProductPage({ params }) {
   const { id } = params || {};

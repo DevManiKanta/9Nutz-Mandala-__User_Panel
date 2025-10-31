@@ -5,6 +5,20 @@ import CategoryProductsClient from "@/components/CategoryProductsClient";
 
 export const dynamicParams = true;
 
+// Required for static export
+export async function generateStaticParams() {
+  // Add your category slugs here
+  return [
+    { slug: "healthy-nuts" },
+    { slug: "namkeens" },
+    { slug: "organic-snacks" },
+    { slug: "packages" },
+    { slug: "combo-packs" },
+    { slug: "snacks" },
+    { slug: "nuts" },
+  ];
+}
+
 export default function CategoryPage({ params }) {
   const slug = params?.slug ?? "";
 

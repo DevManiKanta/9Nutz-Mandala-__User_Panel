@@ -6,6 +6,19 @@ import CategoryProductsClient from "@/components/CategoryProductsClient";
 
 export const dynamicParams = true;
 
+// Required for static export
+export async function generateStaticParams() {
+  // Add your category/subcategory combinations here
+  return [
+    { slug: "healthy-nuts", subcategory: "almonds" },
+    { slug: "healthy-nuts", subcategory: "cashews" },
+    { slug: "namkeens", subcategory: "mixture" },
+    { slug: "namkeens", subcategory: "chips" },
+    { slug: "organic-snacks", subcategory: "dried-fruits" },
+    { slug: "packages", subcategory: "combo-deals" },
+  ];
+}
+
 export default function SubcategoryPage({ params }) {
   const slug = params?.slug ?? "";
   const subcategory = params?.subcategory ?? "";
