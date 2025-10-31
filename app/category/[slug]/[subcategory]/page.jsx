@@ -3,9 +3,7 @@ import React from "react";
 // import MinimalHeaderClient from "@/components/MinimalHeaderClient";
 import Footer from "@/components/Footer";
 import CategoryProductsClient from "@/components/CategoryProductsClient";
-
 export const dynamicParams = true;
-
 // Required for static export
 export async function generateStaticParams() {
   // Add your category/subcategory combinations here
@@ -18,11 +16,9 @@ export async function generateStaticParams() {
     { slug: "packages", subcategory: "combo-deals" },
   ];
 }
-
 export default function SubcategoryPage({ params }) {
   const slug = params?.slug ?? "";
   const subcategory = params?.subcategory ?? "";
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* <MinimalHeaderClient /> */}
@@ -37,7 +33,6 @@ export default function SubcategoryPage({ params }) {
             <span className="text-gray-900 font-medium">{subcategory}</span>
           </div>
         </div>
-
         {/* Client-side product loader */}
         <CategoryProductsClient identifier={`${slug}/${subcategory}`} />
       </main>

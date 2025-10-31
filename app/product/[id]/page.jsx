@@ -78,23 +78,45 @@
 //   );
 // }
 
+// import React from "react";
+// import ProductPageClient from "@/app/product/ProductPageClient";
+// import apiAxios from "@/lib/api";
+// export async function generateStaticParams() {
+//   // fetch all product ids from your API/database
+//   const res = await fetch("/product/show");
+//   const products = await res.json();
+
+//   return products.map((p) => ({ id: String(p.id) }));
+// }
+
+
+// export default function ProductPage({ params }) {
+//   const { id } = params || {};
+//   return <ProductPageClient id={String(id || "")} />;
+// }
+
 import React from "react";
 import ProductPageClient from "@/app/product/ProductPageClient";
 
-// Required for static export
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
-  // Add some sample product IDs - you can expand this list or fetch from API
-  return [
-    { id: "1" },
-    { id: "2" },
-    { id: "3" },
-    { id: "4" },
-    { id: "5" },
-  ];
+  try {
+    const PRODUCTS_URL = process.env.NEXT_PUBLIC_PRODUCTS_URL || "https://9nutsapi.nearbydoctors.in/public/api/product/show";
+    const res = await fetch(PRODUCTS_URL, { cache: "force-cache" });
+    const json = await res.json().catch(() => null);
+    const rows = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+    const ids = rows
+      .map((r) => r && (r.id ?? r.product_id ?? r._id))
+      .filter((v) => v !== undefined && v !== null)
+      .map((v) => ({ id: String(v) }));
+    return ids.length ? ids : [{ id: "1" }];
+  } catch {
+    return [];
+  }
 }
 
 export default function ProductPage({ params }) {
   const { id } = params || {};
   return <ProductPageClient id={String(id || "")} />;
 }
-

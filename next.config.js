@@ -1,5 +1,7 @@
 // // next.config.js
 
+const isStaticExport = process.env.NEXT_STATIC_EXPORT === 'true' || process.env.NODE_ENV === 'production' && process.env.FORCE_EXPORT === 'true';
+
 const nextConfig = {
   poweredByHeader: false,
   eslint: {
@@ -8,9 +10,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true, // ✅ Skip TS errors if any
   },
-  output: "export", // ✅ Enables static export (creates /out)
+  output: isStaticExport ? "export" : undefined,
+  // output: "export",
   images: {
-    unoptimized: true, // ✅ Prevents image optimization error on static hosting
+    unoptimized: true, 
   },
   trailingSlash: true, // ✅ Ensures every route like /admin → /admin/index.html
   // Note: headers() not supported with static export

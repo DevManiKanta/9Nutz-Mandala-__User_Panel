@@ -823,10 +823,10 @@ export default function CartSidebar({
             </div>
           ) : (
             <div className="p-4 space-y-4">
-              {itemsWithPaise.map(({ item, quantity, subtotalPaise }) => {
+              {itemsWithPaise.map(({ item, quantity, subtotalPaise }, idx) => {
                 const imageSrc = item?.imageUrl ?? item?.image ?? "";
                 return (
-                  <div key={String(item?.id ?? Math.random())} className="flex items-start space-x-3 bg-gray-50 p-3 rounded-lg">
+                  <div key={String(item?.id ?? `idx-${idx}`)} className="flex items-start space-x-3 bg-gray-50 p-3 rounded-lg">
                     <img
                       src={imageSrc}
                       alt={item?.name ?? "item"}

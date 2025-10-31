@@ -11,6 +11,7 @@ export default function AppShell({ children }) {
   const { items, updateQuantity, clearCart, cartCount, cartTotal } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const openCart = useCallback(() => setCartOpen(true), []);
   const closeCart = useCallback(() => setCartOpen(false), []);
@@ -19,6 +20,9 @@ export default function AppShell({ children }) {
     const handler = () => setCartOpen(true);
     window.addEventListener("openCart", handler);
     return () => window.removeEventListener("openCart", handler);
+  }, []);
+  useEffect(() => {
+    setMounted(true);
   }, []);
   return (
     <>
@@ -30,14 +34,18 @@ export default function AppShell({ children }) {
       />
       <main className="min-h-screen">{children}</main>
       <Footer />
-      <CartSidebar
-        isOpen={cartOpen}
-        onClose={closeCart}
-        items={items}
-        onUpdateQuantity={updateQuantity}
-        onClearCart={clearCart}
-      />
-      <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />
+      {mounted && (
+        <>
+          <CartSidebar
+            isOpen={cartOpen}
+            onClose={closeCart}
+            items={items}
+            onUpdateQuantity={updateQuantity}
+            onClearCart={clearCart}
+          />
+          <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />
+        </>
+      )}
     </>
   );
 }
