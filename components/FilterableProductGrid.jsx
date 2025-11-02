@@ -640,7 +640,9 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
     return (
       <article
         key={productId}
-        className="bg-white rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all border border-gray-100 overflow-hidden flex flex-col h-full"
+        className="bg-white rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all border border-gray-100 overflow-hidden flex flex-col h-md"
+        // style={{border:"1px solid black"}}
+
       >
         <div className="relative p-4 cursor-pointer">
           <div className="rounded-xl overflow-hidden bg-gray-50">
@@ -671,7 +673,7 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
             </span>
           )}
         </div>
-        <div className="px-5 pb-5 flex-1 flex flex-col">
+        <div className="px-5  flex-1 flex flex-col">
           <h3 className="text-base font-semibold text-gray-900 mb-2 line-clamp-2">{product?.name || "Unnamed"}</h3>
           <div className="flex items-center gap-1 mb-3">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -679,7 +681,7 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
             ))}
           </div>
 
-          <div className="mt-auto">
+          <div>
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xl font-bold text-gray-900">Rs.{formatPrice(displayPrice)}</div>
@@ -698,7 +700,7 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
                       e.preventDefault();
                       handleAddToCart(product);
                     }}
-                    className="px-2 py-2 border-2 border-green-600 text-green-600 rounded-lg font-medium hover:bg-green-50 transition"
+                    className="px-2 border-2 border-green-600 text-green-600 rounded-lg font-medium hover:bg-green-50 transition"
                   >
                     Add to cart
                   </button>
@@ -712,94 +714,125 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
   };
 
   return (
-    <div className="mb-16 w-full py-10">
-      <div className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12 mb-6">
+    <div className="mb-12 w-full py-6">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Shop by Products</h2>
-          {displayedProducts.length > 0 && <span className="text-sm text-gray-500 hidden sm:block">Searched results</span>}
+          <h2 className="text-xl font-bold text-gray-900">Products</h2>
+          {displayedProducts.length > 0 && <span className="text-sm text-gray-500 hidden sm:block">{displayedProducts.length} results</span>}
         </div>
       </div>
-      <div className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div
-          className={`grid gap-8 sm:gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4
+          className={`grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6
             transition-all duration-300 ease-in-out ${isAnimating ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
         >
-          {otherProducts.map((p, i) => (
-            <div key={p.id || i} className="transform transition-transform hover:scale-[1.02]">
-              <article
-                onClick={() => router.push(`/product/${p.id}`)}
-                className="bg-white rounded-2xl shadow-md hover:shadow-2xl overflow-hidden border border-gray-100 flex flex-col h-full"
-                style={{
-                  height: "400px",
-                  minWidth: "280px",
-                }}
-              >
-                <div className="relative w-full h-[260px] sm:h-[250px] md:h-[300px] overflow-hidden">
-                  <img
-                    src={
-                      p?.imageUrl ||
-                      (Array.isArray(p?.images) && p.images[0]) ||
-                      p?.image 
-                    }
-                    alt={p?.name || "product"}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddToWishlist(e, p);
-                    }}
-                    disabled={favSet.has(String(p.id)) || wishlistLoading}
-                    aria-pressed={favSet.has(String(p.id))}
-                    aria-label={favSet.has(String(p.id)) ? "Added to wishlist" : "Add to wishlist"}
-                    className={`absolute top-4 right-4 z-20 p-2 rounded-full shadow-md transition transform
-                      ${favSet.has(String(p.id)) ? "bg-red-50" : "bg-white/90 hover:scale-105"}
-                      ${favSet.has(String(p.id)) ? "cursor-default" : "cursor-pointer"}`}
-                    title={favSet.has(String(p.id)) ? "Already in wishlist" : "Add to wishlist"}
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${favSet.has(String(p.id)) ? "text-red-600" : "text-gray-500"}`}
-                      fill={favSet.has(String(p.id)) ? "currentColor" : "none"}
-                    />
-                  </button>
-                  {p.discountAmount > 0 && (
-                    <span className="absolute top-4 left-4 bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
-                      {Math.round(((p.price - (p.discountPrice || p.price - p.discountAmount)) / p.price) * 100)}% OFF
-                    </span>
-                  )}
-                </div>
-                <div className="flex-1 flex flex-col px-6 py-4">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 line-clamp-2">
-                    {p?.name || "Unnamed"}
-                  </h3>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-xl font-bold text-gray-900">Rs.{p?.discountPrice || p?.price}</div>
-                      {p?.discountPrice && (
-                        <div className="text-sm text-gray-400 line-through">Rs.{p?.price}</div>
-                      )}
-                    </div>
-                    {Number(p?.stock ?? 0) > 0 ? (
-                      <button
-                        className="px-4 py-2 border-2 border-green-600 text-green-600 rounded-lg font-medium hover:bg-green-50 transition"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          handleAddToCart(p);
-                        }}
-                      >
-                        Add to cart
-                      </button>
-                    ) : (
-                      <div className="text-xs font-semibold px-3 py-2 rounded-lg bg-gray-200 text-gray-600 select-none">
-                        Out of stock
+          {otherProducts.map((p, i) => {
+            const displayPrice = computeDisplayPrice(p);
+            const discountPercent = computeDiscountPercent(p);
+            const outOfStock = Number(p?.stock ?? Infinity) <= 0;
+            const isFavourited = favSet.has(String(p.id));
+            
+            // Generate random badge for demo (you can replace with actual product data)
+            const badges = ['Best Seller', "", 'Limited Deal'];
+            const badgeColors = ['bg-orange-500', 'bg-blue-600', 'bg-red-600'];
+            const randomBadge = Math.random() > 0.7 ? badges[Math.floor(Math.random() * badges.length)] : null;
+            const badgeColor = randomBadge ? badgeColors[badges.indexOf(randomBadge)] : '';
+            
+            // Generate random rating (you can replace with actual product rating)
+            const rating = (Math.random() * 2 + 3).toFixed(1); // 3.0 to 5.0
+            const reviewCount = Math.floor(Math.random() * 50000) + 100;
+            
+            return (
+              <div key={p.id || i} className="transform transition-transform hover:scale-[1.02]">
+                <article
+                  onClick={() => router.push(`/product/${p.id}`)}
+                  className="bg-white rounded-lg shadow-sm hover:shadow-md overflow-hidden border border-gray-200 flex flex-col h-full cursor-pointer transition-all duration-200"
+                  style={{
+                    height: "250px",
+                    minWidth: "180px",
+                  }}
+                >
+                  <div className="relative w-full h-[140px] overflow-hidden bg-gray-50">
+                    {/* Badge */}
+                    {randomBadge && (
+                      <div className={`absolute top-2 left-2 z-10 ${badgeColor} text-white text-xs font-medium px-2 py-1 rounded`}>
+                        {randomBadge}
                       </div>
                     )}
+                    
+                    {/* Wishlist Heart */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToWishlist(e, p);
+                      }}
+                      disabled={isFavourited || wishlistLoading}
+                      className={`absolute top-2 right-2 z-10 p-1.5 rounded-full shadow-sm transition
+                        ${isFavourited ? "bg-red-50" : "bg-white/90 hover:bg-white"}
+                        ${isFavourited ? "cursor-default" : "cursor-pointer"}`}
+                    >
+                      <Heart
+                        className={`w-4 h-4 ${isFavourited ? "text-red-600" : "text-gray-500"}`}
+                        fill={isFavourited ? "currentColor" : "none"}
+                      />
+                    </button>
+
+                    <img
+                      src={
+                        p?.imageUrl ||
+                        (Array.isArray(p?.images) && p.images[0]) ||
+                        p?.image ||
+                        "/placeholder.png"
+                      }
+                      alt={p?.name || "product"}
+                      className="w-full h-full object-contain p-2"
+                    />
                   </div>
-                </div>
-              </article>
-            </div>
-          ))}
+                  
+                  <div className="flex-1 flex flex-col p-2">
+                    {/* Product Name */}
+                    <h3 className="text-xs font-medium text-gray-900 mb-2 line-clamp-2 leading-tight">
+                      {p?.name || "Unnamed Product"}
+                    </h3>
+                    
+                    {/* Price */}
+                    <div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm font-bold text-gray-900">
+                          Rs.{formatPrice(displayPrice)}
+                        </span>
+                        {discountPercent > 0 && (
+                          <span className="text-xs text-gray-500 line-through">
+                            Rs.{formatPrice(p.price)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Add to Cart Button */}
+                    <div className="mt-auto">
+                      {outOfStock ? (
+                        <div className="text-center py-2 text-sm text-gray-500 bg-gray-100 rounded">
+                          Out of Stock
+                        </div>
+                      ) : (
+                        <button
+                          className="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-1.5 px-3 rounded transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleAddToCart(p);
+                          }}
+                        >
+                          Add to Cart
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -810,15 +843,114 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
         </div>
       )}
       {combopackProducts.length > 0 && (
-        <section className="mt-12">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12">
-            <h3 className="text-2xl font-semibold text-gray-900">Exclusive Combopacks</h3>
+        <section className="mt-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <h3 className="text-xl font-semibold text-gray-900">Combo Packs</h3>
             <span className="text-sm text-gray-500">{combopackProducts.length} items</span>
           </div>
 
-          <div className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12">
-            <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-              {combopackProducts.map((p, i) => renderProductCard(p, i))}
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+              {combopackProducts.map((p, i) => {
+                const displayPrice = computeDisplayPrice(p);
+                const discountPercent = computeDiscountPercent(p);
+                const outOfStock = Number(p?.stock ?? Infinity) <= 0;
+                const isFavourited = favSet.has(String(p.id));
+                
+                const badges = ['Best Seller', "", 'Limited Deal'];
+                const badgeColors = ['bg-orange-500', 'bg-blue-600', 'bg-red-600'];
+                const randomBadge = Math.random() > 0.7 ? badges[Math.floor(Math.random() * badges.length)] : null;
+                const badgeColor = randomBadge ? badgeColors[badges.indexOf(randomBadge)] : '';
+                
+                const rating = (Math.random() * 2 + 3).toFixed(1);
+                const reviewCount = Math.floor(Math.random() * 50000) + 100;
+                
+                return (
+                  <div key={p.id || i} className="transform transition-transform hover:scale-[1.02]">
+                    <article
+                      onClick={() => router.push(`/product/${p.id}`)}
+                      className="bg-white rounded-lg shadow-sm hover:shadow-md overflow-hidden border border-gray-200 flex flex-col h-full cursor-pointer transition-all duration-200"
+                      style={{
+                        height: "320px",
+                        minWidth: "180px",
+                      }}
+                    >
+                      <div className="relative w-full h-[140px] overflow-hidden bg-gray-50">
+                        {randomBadge && (
+                          <div className={`absolute top-2 left-2 z-10 ${badgeColor} text-white text-xs font-medium px-2 py-1 rounded`}>
+                            {/* {randomBadge} */}
+                          </div>
+                        )}
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToWishlist(e, p);
+                          }}
+                          disabled={isFavourited || wishlistLoading}
+                          className={`absolute top-2 right-2 z-10 p-1.5 rounded-full shadow-sm transition
+                            ${isFavourited ? "bg-red-50" : "bg-white/90 hover:bg-white"}
+                            ${isFavourited ? "cursor-default" : "cursor-pointer"}`}
+                        >
+                          <Heart
+                            className={`w-4 h-4 ${isFavourited ? "text-red-600" : "text-gray-500"}`}
+                            fill={isFavourited ? "currentColor" : "none"}
+                          />
+                        </button>
+
+                        <img
+                          src={
+                            p?.imageUrl ||
+                            (Array.isArray(p?.images) && p.images[0]) ||
+                            p?.image ||
+                            "/placeholder.png"
+                          }
+                          alt={p?.name || "product"}
+                          className="w-full h-full object-contain p-2"
+                        />
+                      </div>
+                      
+                      <div className="flex-1 flex flex-col p-2">
+                        <h3 className="text-xs font-medium text-gray-900 mb-2 line-clamp-2 leading-tight">
+                          {p?.name || "Unnamed Product"}
+                        </h3>
+                        
+                        <div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-bold text-gray-900">
+                              Rs.{formatPrice(displayPrice)}
+                            </span>
+                            {discountPercent > 0 && (
+                              <span className="text-xs text-gray-500 line-through">
+                                Rs.{formatPrice(p.price)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="mt-auto">
+                          {outOfStock ? (
+                            <div className="text-center py-2 text-sm text-gray-500 bg-gray-100 rounded">
+                              Out of Stock
+                            </div>
+                          ) : (
+                            <button
+                              className="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-1.5 px-3 rounded transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                handleAddToCart(p);
+                              }}
+                            >
+                              Add to Cart
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </article>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>

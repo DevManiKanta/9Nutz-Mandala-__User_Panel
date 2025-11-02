@@ -179,15 +179,12 @@ import { useCart } from "@/contexts/CartContext";
 import { useProducts } from "@/contexts/ProductContext";
 import apiAxios, { LOGIN_API_BASE } from "@/lib/api"; 
 import ProductClient from "@/app/product/ProductClient";
-
 export default function ProductPageClient({ id }) {
   const { } = useCart();
   const { products } = useProducts() || { products: [] };
-
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const ASSET_BASE = (LOGIN_API_BASE || "https://9nutsapi.nearbydoctors.in/public").replace(/\/+$/, "");
 
   // fallback search in context
@@ -363,7 +360,6 @@ export default function ProductPageClient({ id }) {
     },
     [findFromContext, normalizeImageEntry]
   );
-
   useEffect(() => {
     if (!id) {
       setError("No product id provided");
