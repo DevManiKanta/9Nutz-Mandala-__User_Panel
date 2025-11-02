@@ -249,7 +249,7 @@ export default function AllProducts({ onAddToCart, selectedCategory, isAnimating
                     }}
                     className="px-2 py-2 border-2 border-green-600 text-green-600 rounded-lg font-medium hover:bg-green-50 transition"
                   >
-                    Add to cart
+                    Add to carts
                   </button>
                 )}
               </div>

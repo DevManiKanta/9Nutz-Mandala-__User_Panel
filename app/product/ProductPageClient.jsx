@@ -379,7 +379,7 @@ export default function ProductPageClient({ id }) {
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 w-full bg-white">
         <section className="w-full bg-gray-50">
-          <div className="max-w-6xl mx-auto px-4 py-1">
+          <div className="max-w-8xl mx-auto px-4 py-1">
             {loading ? (
               <div className="flex justify-center items-center py-24">
                 <div className="w-12 h-12 border-4 border-gray-300 border-t-emerald-500 rounded-full animate-spin"></div>

@@ -78,7 +78,7 @@ export default function ProductGrid({ products: propProducts, onAddToCart, categ
                   <div className="text-xs text-gray-500">{product.weight}</div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="font-bold">₹{price}</div>
+                  {/* <div className="font-bold">₹{price}</div> */}
                   {product.offerPrice && product.offerPrice < (product.price ?? 0) && (
                     <div className="text-xs text-gray-400 line-through">₹{product.price}</div>
                   )}

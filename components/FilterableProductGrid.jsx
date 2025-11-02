@@ -615,7 +615,6 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
 
   const { products } = useProducts() || { products: [] };
   const { categories } = useCategoryDataContext() || { categories: [] };
-  console.log("products", products)
   const staticFallbackProduct = {
     id: "static-001",
     name: "Sample Product (Static)",
@@ -915,7 +914,7 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
           <div>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl font-bold text-gray-900">Rss.{formatPrice(displayPrice)}</div>
+                <div className="text-xl font-bold text-gray-900">Rs.{formatPrice(displayPrice)}</div>
                 {discountPercent > 0 && (
                   <div className="text-xs text-gray-400 mt-1">Rs.{formatPrice(product.price)}</div>
                 )}
@@ -1029,11 +1028,12 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
                     <div>
                       <div className="flex items-baseline gap-2">
                         <span className="text-sm font-bold text-gray-900">
-                          Rs.{formatPrice(displayPrice)}
+                          {/* Rs.{formatPrice(displayPrice)} */}
+                           Rs.{formatPrice(p.price)}
                         </span>
                         {discountPercent > 0 && (
                           <span className="text-xs text-gray-500 line-through">
-                            Rs.{formatPrice(p.price)}
+                            {/* Rs.{formatPrice(p.discountAmount)} */}
                           </span>
                         )}
                       </div>
