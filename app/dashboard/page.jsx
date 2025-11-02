@@ -1,8 +1,6 @@
 
 "use client";
 
-export const dynamic = 'force-dynamic';
-
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrders } from "@/contexts/OrderContext";

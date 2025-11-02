@@ -441,7 +441,7 @@ export default function Header({
           {/* LEFT: Logo + Nav */}
           <div className="flex items-center gap-4 sm:gap-6">
             <Link href="/" className="flex items-center" aria-label="Home">
-              <Image src={logoSrc} alt="9NUTZ" width={80} height={80} className="object-contain" priority />
+              <Image src={logoSrc} alt="9NUTZ" width={120} height={130} className="object-contain" priority />
             </Link>
             <nav className="hidden md:flex items-center space-x-2">
               {tabs.map((t) => (
@@ -464,7 +464,6 @@ export default function Header({
                 >
                   About Us
                 </button>
-
                 <div
                   role="tooltip"
                   className={`absolute left-1/2 transform -translate-x-1/2 mt-2 w-64 md:w-80 p-3 rounded-lg shadow-lg text-sm bg-white border border-gray-100 transition-opacity duration-150 z-50 ${

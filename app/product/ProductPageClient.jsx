@@ -233,7 +233,6 @@ export default function ProductPageClient({ id }) {
       setLoading(true);
       setError(null);
       setProduct(null);
-
       // if no LOGIN_API_BASE configured, fall back to context product
       const baseConfigured = Boolean(LOGIN_API_BASE);
       if (!baseConfigured) {

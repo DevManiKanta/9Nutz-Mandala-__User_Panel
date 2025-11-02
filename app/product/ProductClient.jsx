@@ -213,15 +213,6 @@ import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "next/navigation";
 import { useProducts } from "@/contexts/ProductContext";
 
-/**
- * ProductClient
- * - shows main image
- * - thumbnails row
- * - video embedded (YouTube) shown to the right of thumbnails
- *
- * NOTE: We intentionally keep your existing add-to-cart / openCart behavior unchanged.
- */
-
 function extractYouTubeId(url) {
   if (!url || typeof url !== "string") return null;
   // common YouTube URL patterns: youtu.be/ID, youtube.com/watch?v=ID, youtube.com/shorts/ID, ...with params
@@ -371,68 +362,74 @@ export default function ProductClient({ product }) {
         <ArrowLeft className="w-5 h-5" />
         <span className="hidden sm:inline font-medium">Back to Menu</span>
       </button>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start mt-6">
-        {/* Left: main image + thumbnails + video (video to the right of thumbnails) */}
-        <div className="w-full flex flex-col items-center">
-          <div className="relative w-full max-w-md aspect-square rounded-2xl overflow-hidden shadow-lg bg-gray-50">
+       {/* Left: thumbnails (left) + main image (right) */}
+<div className="w-full">
+  {/* Use flex-row on md+ so thumbnails are left of main image; stack vertically on small screens */}
+  <div className="flex flex-col md:flex-row items-start gap-6">
+    {/* Thumbnails column (left on md+) */}
+    <div
+      className="flex md:flex-col items-center md:items-stretch gap-3"
+      style={{ minWidth: 96 }}
+    >
+      {/* vertical thumbnail list on md+, horizontal on small */}
+      <div
+        className="flex md:flex-col items-center gap-3 overflow-auto py-1 px-1"
+        style={{ maxHeight: 420 }}
+      >
+        {images.map((src, idx) => (
+          <button
+            key={idx}
+            onClick={() => setCurrentIndex(idx)}
+            onKeyDown={(e) => handleThumbKey(e, idx)}
+            aria-label={`View image ${idx + 1}`}
+            className={`flex-shrink-0 rounded-lg overflow-hidden border-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition ${
+              idx === currentIndex ? "ring-2 ring-emerald-600 border-white-600" : "border-gray-200"
+            }`}
+            style={{ width: 84, height: 84, borderRadius: 10 }}
+            title={`Image ${idx + 1}`}
+          >
             <img
-              src={currentImage}
-              alt={product.name}
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+              src={src}
+              alt={`${product.name} ${idx + 1}`}
+              className="w-full h-full object-cover"
+              loading={idx === 0 ? "eager" : "lazy"}
             />
-            {discountPercent > 0 && (
-              <span className="absolute top-4 left-4 bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
-                {discountPercent}% OFF
-              </span>
-            )}
+          </button>
+        ))}
+
+        {/* If you prefer the video to be top or bottom, change its position here */}
+        {videoEmbedUrl && (
+          <div className="mt-1 md:mt-3 rounded-md overflow-hidden border bg-black/5 flex-shrink-0" style={{ width: 160, height: 90 }}>
+            <iframe
+              src={videoEmbedUrl}
+              title={`${product.name} video`}
+              className="w-full h-full"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
+        )}
+      </div>
+    </div>
 
-          {/* thumbnails + video row */}
-          {((images && images.length > 0) || videoEmbedUrl) && (
-            <div className="mt-4 w-full max-w-md">
-              <div className="flex items-start gap-3 py-2 px-1">
-                {/* thumbnails horizontally scrollable */}
-                <div className="flex items-center gap-3 overflow-x-auto py-1 px-1" style={{ flex: 1 }}>
-                  {images.map((src, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCurrentIndex(idx)}
-                      onKeyDown={(e) => handleThumbKey(e, idx)}
-                      aria-label={`View image ${idx + 1}`}
-                      className={`flex-shrink-0 rounded-lg overflow-hidden border-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition ${
-                        idx === currentIndex ? "ring-2 ring-emerald-600 border-white-600" : "border-gray-200"
-                      }`}
-                      style={{ width: 84, height: 84, borderRadius: 10 }}
-                      title={`Image ${idx + 1}`}
-                    >
-                      <img
-                        src={src}
-                        alt={`${product.name} ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                        loading={idx === 0 ? "eager" : "lazy"}
-                      />
-                    </button>
-                  ))}
-                </div>
+    {/* Main image (right on md+) */}
+    <div className="relative w-full max-w-md aspect-square rounded-2xl overflow-hidden shadow-lg bg-gray-50">
+      <img
+        src={currentImage}
+        alt={product.name}
+        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+      />
+      {discountPercent > 0 && (
+        <span className="absolute top-4 left-4 bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
+          {discountPercent}% OFF
+        </span>
+      )}
+    </div>
+  </div>
+</div>
 
-                {/* video box to the right of thumbnails */}
-                {videoEmbedUrl && (
-                  <div className="ml-2 rounded-md overflow-hidden border bg-black/5 flex-shrink-0" style={{ width: 160, height: 90 }}>
-                    <iframe
-                      src={videoEmbedUrl}
-                      title={`${product.name} video`}
-                      className="w-full h-full"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Right: product info */}
         <div className="flex flex-col gap-6">

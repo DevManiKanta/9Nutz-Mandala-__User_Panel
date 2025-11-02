@@ -98,58 +98,21 @@
 import React from "react";
 import ProductPageClient from "@/app/product/ProductPageClient";
 
-export const dynamicParams = false;
-
+// Required for static export - generate a comprehensive set of product pages
 export async function generateStaticParams() {
-  const PRODUCTS_URL = process.env.NEXT_PUBLIC_PRODUCTS_URL || "https://9nutsapi.nearbydoctors.in/public/api/product/show";
-  const CATEGORIES_URL = process.env.NEXT_PUBLIC_CATEGORIES_URL || "https://9nutsapi.nearbydoctors.in/public/api/category/show";
-  const API_BASE_FROM_PRODUCTS = PRODUCTS_URL.replace(/\/product\/show.*/, "");
-
-  async function fetchJson(url) {
-    try {
-      const res = await fetch(url, { cache: "force-cache" });
-      const data = await res.json().catch(() => null);
-      return data;
-    } catch {
-      return null;
-    }
+  // Generate a range of product IDs to cover common cases
+  const ids = [];
+  
+  // Add basic range 1-200
+  for (let i = 1; i <= 200; i++) {
+    ids.push({ id: String(i) });
   }
-
-  const ids = new Set();
-
-  // 1) Collect from products list
-  const prodJson = await fetchJson(PRODUCTS_URL);
-  const prodRows = Array.isArray(prodJson?.data) ? prodJson.data : Array.isArray(prodJson) ? prodJson : [];
-  for (const r of prodRows) {
-    const v = r && (r.id ?? r.product_id ?? r._id);
-    if (v !== undefined && v !== null) ids.add(String(v));
-  }
-
-  // 2) Collect from categories -> online-categories/show-category/{id}
-  const catJson = await fetchJson(CATEGORIES_URL);
-  const catRows = Array.isArray(catJson?.data) ? catJson.data : Array.isArray(catJson) ? catJson : [];
-  const catIds = catRows
-    .map((c) => c && (c.id ?? c._id ?? c.category_id))
-    .filter((v) => v !== undefined && v !== null)
-    .slice(0, 50); // cap to reasonable number
-
-  await Promise.all(
-    catIds.map(async (cid) => {
-      const url = `${API_BASE_FROM_PRODUCTS}/online-categories/show-category/${encodeURIComponent(String(cid))}`;
-      const detail = await fetchJson(url);
-      const products = Array.isArray(detail?.data?.products) ? detail.data.products : Array.isArray(detail?.products) ? detail.products : [];
-      for (const p of products) {
-        const v = p && (p.id ?? p.product_id ?? p._id);
-        if (v !== undefined && v !== null) ids.add(String(v));
-      }
-    })
-  );
-
-  const out = Array.from(ids).map((id) => ({ id }));
-  return out.length ? out : [{ id: "1" }];
+  
+  return ids;
 }
 
 export default function ProductPage({ params }) {
   const { id } = params || {};
   return <ProductPageClient id={String(id || "")} />;
 }
+

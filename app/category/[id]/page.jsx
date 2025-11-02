@@ -1,30 +1,39 @@
+// app/category/[id]/page.jsx
 import React from "react";
 import CategoryProductsClient from "@/components/CategoryProductsClient";
-import { CATEGORIES_API_URL } from "@/lib/api";
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 
+// Required for static export
 export async function generateStaticParams() {
-  try {
-    const res = await fetch(CATEGORIES_API_URL, { cache: "force-cache" });
-    const json = await res.json().catch(() => null);
-    const rows = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
-    const ids = rows
-      .map((r) => r && (r.id ?? r._id ?? r.category_id))
-      .filter((v) => v !== undefined && v !== null)
-      .map((v) => ({ id: String(v) }));
-    return ids.length ? ids : [{ id: "1" }];
-  } catch {
-    return [{ id: "1" }];
-  }
+  // Add your category IDs here
+  return [
+    { id: "1" },
+    { id: "2" },
+    { id: "3" },
+    { id: "69" },
+    { id: "70" },
+    { id: "71" },
+    { id: "72" },
+    { id: "73" },
+    { id: "74" },
+    { id: "76" },
+    { id: "77" },
+    { id: "78" },
+    { id: "79" },
+    { id: "80" },
+    { id: "82" },
+  ];
 }
 
 export default function CategoryPage({ params }) {
   const id = params?.id ?? "";
+
   return (
     <div className="min-h-screen bg-gray-50">
       <main>
-        <CategoryProductsClient identifier={String(id)} />
+        {/* Client-side product loader */}
+        <CategoryProductsClient identifier={id} />
       </main>
     </div>
   );

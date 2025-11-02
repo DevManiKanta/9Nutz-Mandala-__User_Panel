@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = 'force-dynamic';
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus, Minus, Star, Heart } from "lucide-react";
 import { useProducts } from "@/contexts/ProductContext";
