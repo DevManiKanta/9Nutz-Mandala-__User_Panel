@@ -113,6 +113,10 @@ export async function generateStaticParams() {
 
 export default function ProductPage({ params }) {
   const { id } = params || {};
-  return <ProductPageClient id={String(id || "")} />;
+  return (
+     <div style={{width:"100%"}}>
+      <ProductPageClient id={String(id || "")} />
+      </div>
+  )
 }
 
