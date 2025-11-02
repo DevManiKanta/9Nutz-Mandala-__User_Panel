@@ -28,7 +28,7 @@ export async function generateStaticParams() {
 
 export default function CategoryPage({ params }) {
   const id = params?.id ?? "";
-
+  // console.log("Id",id)
   return (
     <div className="min-h-screen bg-gray-50">
       <main>

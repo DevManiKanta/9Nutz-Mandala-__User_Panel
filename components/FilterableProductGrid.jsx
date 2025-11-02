@@ -15,7 +15,7 @@
 
 //   const { products } = useProducts() || { products: [] };
 //   const { categories } = useCategoryDataContext() || { categories: [] };
-
+//    console.log("products",products)
 //   const staticFallbackProduct = {
 //     id: "static-001",
 //     name: "Sample Product (Static)",
@@ -51,7 +51,6 @@
 //     return () => window.removeEventListener("siteSearch", handleSearch);
 //   }, []);
 
-//   // ===== FIXED: more robust category id/name extraction =====
 //   const getProductCategoryIdAndName = useCallback((p) => {
 //     const cat = p && p.category;
 //     if (cat == null) return { id: undefined, name: undefined };
@@ -63,7 +62,6 @@
 //     const name = String(cat.name ?? cat.title ?? cat.category_name ?? cat.categoryName ?? "").trim() || undefined;
 //     return { id, name };
 //   }, []);
-//   // ===========================================================
 
 //   const combopackCategoryIds = useMemo(() => {
 //     if (!Array.isArray(categories)) return new Set();
@@ -113,30 +111,119 @@
 //     setQuantities((prev) => ({ ...prev, [String(productId)]: Math.trunc(newQuantity) }));
 //   }, []);
 
+//   const normalizeForCart = useCallback((raw) => {
+//     if (!raw) return raw;
+//     const id = raw.id ?? raw.product_id ?? raw._id ?? raw.slug ?? null;
+//     const product_id = raw.product_id ?? raw.id ?? raw._id ?? null;
+//     const price = typeof raw.price !== "undefined" ? raw.price : raw.cost ?? raw.amount ?? 0;
+//     const discountPrice = raw.discountPrice ?? raw.discount_price ?? raw.discount ?? null;
+//     const name = raw.name ?? raw.title ?? "Untitled";
+//     const stock = typeof raw.stock !== "undefined" ? raw.stock : raw.qty ?? raw.quantity ?? 0;
+
+//     return {
+//       ...raw,
+//       id,
+//       product_id,
+//       price,
+//       discountPrice,
+//       name,
+//       stock,
+//     };
+//   }, []);
+
 //   const handleAddToCart = useCallback(
 //     (product) => {
-//       const stockVal = Number(product?.stock ?? Infinity);
-//       if (stockVal <= 0) return;
-//       const qty = Math.max(1, qtyOf(product.id));
-//       for (let i = 0; i < qty; i++) onAddToCart(product);
-//       setQuantities((prev) => {
-//         const copy = { ...prev };
-//         delete copy[String(product.id)];
-//         return copy;
-//       });
+//       try {
+//         if (!product) {
+//           console.warn("handleAddToCart called with falsy product");
+//           return;
+//         }
+
+//         const normalized = normalizeForCart(product);
+
+//         const idToCheck = normalized.id ?? normalized.product_id ?? null;
+//         if (!idToCheck) {
+//           console.warn("Product missing id/product_id — not adding to cart:", normalized);
+//           return;
+//         }
+
+//         const stockVal = Number(normalized?.stock ?? Infinity);
+//         if (!Number.isFinite(stockVal) || stockVal <= 0) {
+//           console.warn("addToCart prevented — out of stock:", normalized);
+//           return;
+//         }
+
+//         const qty = Math.max(1, qtyOf(idToCheck));
+
+//         // call parent's onAddToCart (do NOT dispatch openCart here)
+//         for (let i = 0; i < qty; i++) {
+//           if (typeof onAddToCart === "function") onAddToCart(normalized);
+//         }
+
+//         setQuantities((prev) => {
+//           const copy = { ...prev };
+//           delete copy[String(idToCheck)];
+//           return copy;
+//         });
+
+//         // IMPORTANT: DO NOT dispatch openCart here. Parent controls opening the cart.
+//       } catch (err) {
+//         console.error("handleAddToCart unexpected error:", err);
+//       }
 //     },
-//     [onAddToCart, qtyOf]
+//     [normalizeForCart, onAddToCart, qtyOf]
 //   );
 
 //   const formatPrice = useCallback((n) => (Number.isNaN(Number(n)) ? "0.00" : Number(n).toFixed(2)), []);
-//   const computeDisplayPrice = useCallback((p) => {
-//     const dPrice = p?.discountPrice ?? p?.discount_price;
-//     const dAmt = p?.discountAmount ?? p?.discount_amount;
-//     const orig = Number(p?.price || 0);
-//     if (dPrice > 0) return dPrice;
-//     if (dAmt > 0) return Math.max(0, orig - dAmt);
-//     return orig;
-//   }, []);
+//   // Defensive, normalized computeDisplayPrice
+// const computeDisplayPrice = useCallback((p) => {
+//   if (!p) return 0;
+
+//   // helper to try many common locations and coerce to number
+//   const readNumber = (v) => {
+//     if (v == null) return undefined;
+//     if (typeof v === "number") return v;
+//     if (typeof v === "string") {
+//       const cleaned = v.replace(/[^0-9.\-]/g, "");
+//       const n = Number(cleaned);
+//       return Number.isFinite(n) ? n : undefined;
+//     }
+//     if (typeof v === "object") {
+//       // check common keys inside object
+//       for (const k of ["price", "selling_price", "amount", "value"]) {
+//         if (v[k] != null) {
+//           const r = readNumber(v[k]);
+//           if (r !== undefined) return r;
+//         }
+//       }
+//       return undefined;
+//     }
+//     return undefined;
+//   };
+
+//   // Try discount price first (various keys)
+//   const discountCandidates = [
+//     p.discountPrice,
+//     p.discount_price,
+//     p.discountAmount && (Number(p.discountAmount) < Number(p.price || 0) ? (Number(p.price || 0) - Number(p.discountAmount)) : undefined),
+//     p.discount_amount,
+//   ];
+//   // Prefer explicit discount price if > 0
+//   for (const cand of discountCandidates) {
+//     const n = readNumber(cand);
+//     if (n !== undefined && n > 0) return n;
+//   }
+
+//   // If no explicit discount price, try explicit discount amount
+//   const dAmt = readNumber(p.discountAmount ?? p.discount_amount);
+//   const orig = readNumber(p.price ?? p.raw?.price ?? p.priceBefore ?? p.price_before) ?? 0;
+//   if (dAmt !== undefined && dAmt > 0) {
+//     // If discount amount provided as amount, compute shown price
+//     return Math.max(0, orig - dAmt);
+//   }
+//   return orig;
+// }, []);
+
 //   const computeDiscountPercent = useCallback(
 //     (p) => {
 //       const orig = Number(p?.price || 0);
@@ -159,7 +246,6 @@
 //     return { combopackProducts: combo, otherProducts: others };
 //   }, [displayedProducts, combopackCategoryIds, getProductCategoryIdAndName]);
 
-//   // helper when clicking heart
 //   const handleAddToWishlist = useCallback(
 //     async (e, product) => {
 //       e.stopPropagation();
@@ -168,18 +254,12 @@
 //       const productId = String(product?.id ?? product?.product_id ?? product?._id ?? "");
 //       if (!productId) return;
 
-//       // if already favourited, do nothing (no remove endpoint available)
-//       if (favSet.has(productId)) {
-//         // optionally show UI feedback; simple alert for now
-//         // You can replace this with a toast.
-//         return;
-//       }
+//       if (favSet.has(productId)) return;
 
 //       try {
 //         await addFavorite(productId);
-//         // optimistic state update is handled by context; local favSet will update via effect when favorites change
 //       } catch (err) {
-//         // optionally show UI feedback here
+//         // ignore or show toast
 //       }
 //     },
 //     [addFavorite, favSet]
@@ -187,7 +267,6 @@
 
 //   const renderProductCard = (product, idx) => {
 //     const productId = String(product?.id || `tmp-${idx}`);
-//     const currentQuantity = qtyOf(productId);
 //     const displayPrice = computeDisplayPrice(product);
 //     const discountPercent = computeDiscountPercent(product);
 //     const outOfStock = Number(product?.stock ?? Infinity) <= 0;
@@ -199,14 +278,15 @@
 //     return (
 //       <article
 //         key={productId}
-//         className="bg-white rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all border border-gray-100 overflow-hidden flex flex-col h-full"
+//         className="bg-white rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all border border-gray-100 overflow-hidden flex flex-col h-md"
+//         // style={{border:"1px solid black"}}
+
 //       >
 //         <div className="relative p-4 cursor-pointer">
 //           <div className="rounded-xl overflow-hidden bg-gray-50">
 //             <img src={img} alt={product?.name || "product"} className="w-full h-56 object-cover" />
 //           </div>
 
-//           {/* Favourite icon - top right */}
 //           <button
 //             onClick={(e) => handleAddToWishlist(e, product)}
 //             disabled={isFavourited || wishlistLoading}
@@ -231,7 +311,7 @@
 //             </span>
 //           )}
 //         </div>
-//         <div className="px-5 pb-5 flex-1 flex flex-col">
+//         <div className="px-5  flex-1 flex flex-col">
 //           <h3 className="text-base font-semibold text-gray-900 mb-2 line-clamp-2">{product?.name || "Unnamed"}</h3>
 //           <div className="flex items-center gap-1 mb-3">
 //             {Array.from({ length: 5 }).map((_, i) => (
@@ -239,7 +319,7 @@
 //             ))}
 //           </div>
 
-//           <div className="mt-auto">
+//           <div>
 //             <div className="flex items-center justify-between">
 //               <div>
 //                 <div className="text-xl font-bold text-gray-900">Rs.{formatPrice(displayPrice)}</div>
@@ -258,7 +338,7 @@
 //                       e.preventDefault();
 //                       handleAddToCart(product);
 //                     }}
-//                     className="px-2 py-2 border-2 border-green-600 text-green-600 rounded-lg font-medium hover:bg-green-50 transition"
+//                     className="px-2 border-2 border-green-600 text-green-600 rounded-lg font-medium hover:bg-green-50 transition"
 //                   >
 //                     Add to cart
 //                   </button>
@@ -272,108 +352,125 @@
 //   };
 
 //   return (
-//     <div className="mb-16 w-full">
-//       {/* Put header inside the same centered container so it aligns with categories */}
-//       <div className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12 mb-6">
+//     <div className="mb-12 w-full py-6">
+//       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-4">
 //         <div className="flex items-center justify-between">
-//           <h2 className="text-2xl font-bold text-gray-900">Shop by Products</h2>
-//           {displayedProducts.length > 0 && <span className="text-sm text-gray-500 hidden sm:block">Searched results</span>}
+//           <h2 className="text-xl font-bold text-gray-900">Products</h2>
+//           {displayedProducts.length > 0 && <span className="text-sm text-gray-500 hidden sm:block">{displayedProducts.length} results</span>}
 //         </div>
 //       </div>
-
-//       {/* Centered product grid container with slightly larger cards */}
-//       <div className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12">
+//       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
 //         <div
-//           className={`grid gap-8 sm:gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4
+//           className={`grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6
 //             transition-all duration-300 ease-in-out ${isAnimating ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
 //         >
-//           {otherProducts.map((p, i) => (
-//             <div key={p.id || i} className="transform transition-transform hover:scale-[1.02]">
-//               <article
-//                 onClick={() => router.push(`/product/${p.id}`)}
-//                 className="bg-white rounded-2xl shadow-md hover:shadow-2xl overflow-hidden border border-gray-100 flex flex-col h-full"
-//                 style={{
-//                   height: "480px",
-//                   minWidth: "280px",
-//                 }}
-//               >
-//                 <div className="relative w-full h-[260px] sm:h-[280px] md:h-[300px] overflow-hidden">
-//                   <img
-//                     src={
-//                       p?.imageUrl ||
-//                       (Array.isArray(p?.images) && p.images[0]) ||
-//                       p?.image ||
-//                       "/placeholder.png"
-//                     }
-//                     alt={p?.name || "product"}
-//                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-//                   />
-
-//                   {/* Heart icon for this larger card too */}
-//                   <button
-//                     onClick={(e) => handleAddToWishlist(e, p)}
-//                     disabled={favSet.has(String(p.id)) || wishlistLoading}
-//                     aria-pressed={favSet.has(String(p.id))}
-//                     aria-label={favSet.has(String(p.id)) ? "Added to wishlist" : "Add to wishlist"}
-//                     className={`absolute top-4 right-4 z-20 p-2 rounded-full shadow-md transition transform
-//                       ${favSet.has(String(p.id)) ? "bg-red-50" : "bg-white/90 hover:scale-105"}
-//                       ${favSet.has(String(p.id)) ? "cursor-default" : "cursor-pointer"}`}
-//                     title={favSet.has(String(p.id)) ? "Already in wishlist" : "Add to wishlist"}
-//                     onMouseDown={(e) => e.stopPropagation()}
-//                     onMouseUp={(e) => e.stopPropagation()}
-//                   >
-//                     <Heart
-//                       className={`w-5 h-5 ${favSet.has(String(p.id)) ? "text-red-600" : "text-gray-500"}`}
-//                       fill={favSet.has(String(p.id)) ? "currentColor" : "none"}
-//                     />
-//                   </button>
-
-//                   {p.discountAmount > 0 && (
-//                     <span className="absolute top-4 left-4 bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
-//                       {Math.round(((p.price - (p.discountPrice || p.price - p.discountAmount)) / p.price) * 100)}% OFF
-//                     </span>
-//                   )}
-//                 </div>
-
-//                 <div className="flex-1 flex flex-col px-6 py-4">
-//                   <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 line-clamp-2">
-//                     {p?.name || "Unnamed"}
-//                   </h3>
-
-//                   <div className="flex items-center gap-1 mb-3">
-//                     {Array.from({ length: 5 }).map((_, i) => (
-//                       <Star key={i} className="w-4 h-4 text-yellow-400" />
-//                     ))}
-//                   </div>
-
-//                   <div className="mt-auto flex items-center justify-between">
-//                     <div>
-//                       <div className="text-xl font-bold text-gray-900">Rs.{p?.discountPrice || p?.price}</div>
-//                       {p?.discountPrice && (
-//                         <div className="text-sm text-gray-400 line-through">Rs.{p?.price}</div>
-//                       )}
-//                     </div>
-//                     {Number(p?.stock ?? 0) > 0 ? (
-//                       <button
-//                         className="px-4 py-2 border-2 border-green-600 text-green-600 rounded-lg font-medium hover:bg-green-50 transition"
-//                         onClick={(e) => {
-//                           e.stopPropagation();
-//                           e.preventDefault();
-//                           handleAddToCart(p);
-//                         }}
-//                       >
-//                         Add to cart
-//                       </button>
-//                     ) : (
-//                       <div className="text-xs font-semibold px-3 py-2 rounded-lg bg-gray-200 text-gray-600 select-none">
-//                         Out of stock
+//           {otherProducts.map((p, i) => {
+//             const displayPrice = computeDisplayPrice(p);
+//             const discountPercent = computeDiscountPercent(p);
+//             const outOfStock = Number(p?.stock ?? Infinity) <= 0;
+//             const isFavourited = favSet.has(String(p.id));
+            
+//             // Generate random badge for demo (you can replace with actual product data)
+//             const badges = ['Best Seller', "", 'Limited Deal'];
+//             const badgeColors = ['bg-orange-500', 'bg-blue-600', 'bg-red-600'];
+//             const randomBadge = Math.random() > 0.7 ? badges[Math.floor(Math.random() * badges.length)] : null;
+//             const badgeColor = randomBadge ? badgeColors[badges.indexOf(randomBadge)] : '';
+            
+//             // Generate random rating (you can replace with actual product rating)
+//             const rating = (Math.random() * 2 + 3).toFixed(1); // 3.0 to 5.0
+//             const reviewCount = Math.floor(Math.random() * 50000) + 100;
+            
+//             return (
+//               <div key={p.id || i} className="transform transition-transform hover:scale-[1.02]">
+//                 <article
+//                   onClick={() => router.push(`/product/${p.id}`)}
+//                   className="bg-white rounded-lg shadow-sm hover:shadow-md overflow-hidden border border-gray-200 flex flex-col h-full cursor-pointer transition-all duration-200"
+//                   style={{
+//                     height: "250px",
+//                     minWidth: "180px",
+//                   }}
+//                 >
+//                   <div className="relative w-full h-[140px] overflow-hidden bg-gray-50">
+//                     {/* Badge */}
+//                     {randomBadge && (
+//                       <div className={`absolute top-2 left-2 z-10 ${badgeColor} text-white text-xs font-medium px-2 py-1 rounded`}>
+//                         {randomBadge}
 //                       </div>
 //                     )}
+                    
+//                     {/* Wishlist Heart */}
+//                     <button
+//                       onClick={(e) => {
+//                         e.stopPropagation();
+//                         handleAddToWishlist(e, p);
+//                       }}
+//                       disabled={isFavourited || wishlistLoading}
+//                       className={`absolute top-2 right-2 z-10 p-1.5 rounded-full shadow-sm transition
+//                         ${isFavourited ? "bg-red-50" : "bg-white/90 hover:bg-white"}
+//                         ${isFavourited ? "cursor-default" : "cursor-pointer"}`}
+//                     >
+//                       <Heart
+//                         className={`w-4 h-4 ${isFavourited ? "text-red-600" : "text-gray-500"}`}
+//                         fill={isFavourited ? "currentColor" : "none"}
+//                       />
+//                     </button>
+
+//                     <img
+//                       src={
+//                         p?.imageUrl ||
+//                         (Array.isArray(p?.images) && p.images[0]) ||
+//                         p?.image ||
+//                         "/placeholder.png"
+//                       }
+//                       alt={p?.name || "product"}
+//                       className="w-full h-full object-contain p-2"
+//                     />
 //                   </div>
-//                 </div>
-//               </article>
-//             </div>
-//           ))}
+                  
+//                   <div className="flex-1 flex flex-col p-2">
+//                     {/* Product Name */}
+//                     <h3 className="text-xs font-medium text-gray-900 mb-2 line-clamp-2 leading-tight">
+//                       {p?.name || "Unnamed Product"}
+//                     </h3>
+                    
+//                     {/* Price */}
+//                     <div>
+//                       <div className="flex items-baseline gap-2">
+//                         <span className="text-sm font-bold text-gray-900">
+//                           Rs.{formatPrice(displayPrice)}
+//                         </span>
+//                         {discountPercent > 0 && (
+//                           <span className="text-xs text-gray-500 line-through">
+//                             Rs.{formatPrice(p.price)}
+//                           </span>
+//                         )}
+//                       </div>
+//                     </div>
+                    
+//                     {/* Add to Cart Button */}
+//                     <div className="mt-auto">
+//                       {outOfStock ? (
+//                         <div className="text-center py-2 text-sm text-gray-500 bg-gray-100 rounded">
+//                           Out of Stock
+//                         </div>
+//                       ) : (
+//                         <button
+//                           className="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-1.5 px-3 rounded transition-colors"
+//                           onClick={(e) => {
+//                             e.stopPropagation();
+//                             e.preventDefault();
+//                             handleAddToCart(p);
+//                           }}
+//                         >
+//                           Add to Cart
+//                         </button>
+//                       )}
+//                     </div>
+//                   </div>
+//                 </article>
+//               </div>
+//             );
+//           })}
 //         </div>
 //       </div>
 
@@ -383,18 +480,115 @@
 //           <p className="text-gray-500">Try another keyword.</p>
 //         </div>
 //       )}
-
-//       {/* Combopack section */}
 //       {combopackProducts.length > 0 && (
-//         <section className="mt-12">
-//           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12">
-//             <h3 className="text-2xl font-semibold text-gray-900">Exclusive Combopacks</h3>
+//         <section className="mt-8">
+//           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+//             <h3 className="text-xl font-semibold text-gray-900">Combo Packs</h3>
 //             <span className="text-sm text-gray-500">{combopackProducts.length} items</span>
 //           </div>
 
-//           <div className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12">
-//             <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-//               {combopackProducts.map((p, i) => renderProductCard(p, i))}
+//           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+//             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+//               {combopackProducts.map((p, i) => {
+//                 const displayPrice = computeDisplayPrice(p);
+//                 const discountPercent = computeDiscountPercent(p);
+//                 const outOfStock = Number(p?.stock ?? Infinity) <= 0;
+//                 const isFavourited = favSet.has(String(p.id));
+                
+//                 const badges = ['Best Seller', "", 'Limited Deal'];
+//                 const badgeColors = ['bg-orange-500', 'bg-blue-600', 'bg-red-600'];
+//                 const randomBadge = Math.random() > 0.7 ? badges[Math.floor(Math.random() * badges.length)] : null;
+//                 const badgeColor = randomBadge ? badgeColors[badges.indexOf(randomBadge)] : '';
+                
+//                 const rating = (Math.random() * 2 + 3).toFixed(1);
+//                 const reviewCount = Math.floor(Math.random() * 50000) + 100;
+                
+//                 return (
+//                   <div key={p.id || i} className="transform transition-transform hover:scale-[1.02]">
+//                     <article
+//                       onClick={() => router.push(`/product/${p.id}`)}
+//                       className="bg-white rounded-lg shadow-sm hover:shadow-md overflow-hidden border border-gray-200 flex flex-col h-full cursor-pointer transition-all duration-200"
+//                       style={{
+//                         height: "320px",
+//                         minWidth: "180px",
+//                       }}
+//                     >
+//                       <div className="relative w-full h-[140px] overflow-hidden bg-gray-50">
+//                         {randomBadge && (
+//                           <div className={`absolute top-2 left-2 z-10 ${badgeColor} text-white text-xs font-medium px-2 py-1 rounded`}>
+//                             {/* {randomBadge} */}
+//                           </div>
+//                         )}
+                        
+//                         <button
+//                           onClick={(e) => {
+//                             e.stopPropagation();
+//                             handleAddToWishlist(e, p);
+//                           }}
+//                           disabled={isFavourited || wishlistLoading}
+//                           className={`absolute top-2 right-2 z-10 p-1.5 rounded-full shadow-sm transition
+//                             ${isFavourited ? "bg-red-50" : "bg-white/90 hover:bg-white"}
+//                             ${isFavourited ? "cursor-default" : "cursor-pointer"}`}
+//                         >
+//                           <Heart
+//                             className={`w-4 h-4 ${isFavourited ? "text-red-600" : "text-gray-500"}`}
+//                             fill={isFavourited ? "currentColor" : "none"}
+//                           />
+//                         </button>
+
+//                         <img
+//                           src={
+//                             p?.imageUrl ||
+//                             (Array.isArray(p?.images) && p.images[0]) ||
+//                             p?.image ||
+//                             "/placeholder.png"
+//                           }
+//                           alt={p?.name || "product"}
+//                           className="w-full h-full object-contain p-2"
+//                         />
+//                       </div>
+                      
+//                       <div className="flex-1 flex flex-col p-2">
+//                         <h3 className="text-xs font-medium text-gray-900 mb-2 line-clamp-2 leading-tight">
+//                           {p?.name || "Unnamed Product"}
+//                         </h3>
+                        
+//                         <div>
+//                           <div className="flex items-baseline gap-2">
+//                             <span className="text-sm font-bold text-gray-900">
+//                               Rs.{formatPrice(displayPrice)}
+//                             </span>
+//                             {discountPercent > 0 && (
+//                               <span className="text-xs text-gray-500 line-through">
+//                                 Rs.{formatPrice(p.price)}
+//                               </span>
+//                             )}
+//                           </div>
+//                         </div>
+                        
+//                         <div className="mt-auto">
+//                           {outOfStock ? (
+//                             <div className="text-center py-2 text-sm text-gray-500 bg-gray-100 rounded">
+//                               Out of Stock
+//                             </div>
+//                           ) : (
+//                             <button
+//                               className="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-1.5 px-3 rounded transition-colors"
+//                               onClick={(e) => {
+//                                 e.stopPropagation();
+//                                 e.preventDefault();
+//                                 handleAddToCart(p);
+//                               }}
+//                             >
+//                               Add to Cart
+//                             </button>
+//                           )}
+//                         </div>
+//                       </div>
+//                     </article>
+//                   </div>
+//                 );
+//               })}
 //             </div>
 //           </div>
 //         </section>
@@ -402,6 +596,9 @@
 //     </div>
 //   );
 // }
+
+
+
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus, Minus, Star, Heart } from "lucide-react";
@@ -418,7 +615,7 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
 
   const { products } = useProducts() || { products: [] };
   const { categories } = useCategoryDataContext() || { categories: [] };
-
+  console.log("products", products)
   const staticFallbackProduct = {
     id: "static-001",
     name: "Sample Product (Static)",
@@ -578,14 +775,51 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
   );
 
   const formatPrice = useCallback((n) => (Number.isNaN(Number(n)) ? "0.00" : Number(n).toFixed(2)), []);
+
+  // ---------- UPDATED PRICE LOGIC (defensive & normalized) ----------
   const computeDisplayPrice = useCallback((p) => {
-    const dPrice = p?.discountPrice ?? p?.discount_price;
-    const dAmt = p?.discountAmount ?? p?.discount_amount;
-    const orig = Number(p?.price || 0);
-    if (dPrice > 0) return dPrice;
-    if (dAmt > 0) return Math.max(0, orig - dAmt);
+    // helper to coerce many forms into a numeric value or undefined
+    const readNumber = (v) => {
+      if (v == null) return undefined;
+      if (typeof v === "number") return v;
+      if (typeof v === "string") {
+        const cleaned = v.replace(/[^0-9.\-]/g, "");
+        const n = Number(cleaned);
+        return Number.isFinite(n) ? n : undefined;
+      }
+      if (typeof v === "object") {
+        for (const k of ["price", "selling_price", "amount", "value", "mrp"]) {
+          if (v[k] != null) {
+            const r = readNumber(v[k]);
+            if (r !== undefined) return r;
+          }
+        }
+        return undefined;
+      }
+      return undefined;
+    };
+
+    if (!p) return 0;
+
+    // Prefer explicit discount price fields if numeric > 0
+    const discountCandidates = [p.discountPrice, p.discount_price, p.discount_price_formatted, p.discount];
+    for (const cand of discountCandidates) {
+      const n = readNumber(cand);
+      if (n !== undefined && n > 0) return n;
+    }
+
+    // If discount amount provided (amount to subtract), use it
+    const dAmt = readNumber(p.discountAmount ?? p.discount_amount ?? null);
+    const orig = readNumber(p.price ?? p.raw?.price ?? p.priceBefore ?? p.price_before) ?? 0;
+    if (dAmt !== undefined && dAmt > 0) {
+      return Math.max(0, orig - dAmt);
+    }
+
+    // fallback to original price if present
     return orig;
   }, []);
+  // -----------------------------------------------------------------
+
   const computeDiscountPercent = useCallback(
     (p) => {
       const orig = Number(p?.price || 0);
@@ -629,7 +863,7 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
 
   const renderProductCard = (product, idx) => {
     const productId = String(product?.id || `tmp-${idx}`);
-    const displayPrice = computeDisplayPrice(product);
+    const displayPrice = Number(computeDisplayPrice(product) || 0); // <-- ensured numeric
     const discountPercent = computeDiscountPercent(product);
     const outOfStock = Number(product?.stock ?? Infinity) <= 0;
     const img =
@@ -641,8 +875,6 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
       <article
         key={productId}
         className="bg-white rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all border border-gray-100 overflow-hidden flex flex-col h-md"
-        // style={{border:"1px solid black"}}
-
       >
         <div className="relative p-4 cursor-pointer">
           <div className="rounded-xl overflow-hidden bg-gray-50">
@@ -680,16 +912,14 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
               <Star key={i} className="w-4 h-4 text-yellow-400" />
             ))}
           </div>
-
           <div>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl font-bold text-gray-900">Rs.{formatPrice(displayPrice)}</div>
+                <div className="text-xl font-bold text-gray-900">Rss.{formatPrice(displayPrice)}</div>
                 {discountPercent > 0 && (
-                  <div className="text-xs text-gray-400 mt-1 line-through">Rs.{formatPrice(product.price)}</div>
+                  <div className="text-xs text-gray-400 mt-1">Rs.{formatPrice(product.price)}</div>
                 )}
               </div>
-
               <div className="flex items-center space-x-2">
                 {outOfStock ? (
                   <div className="text-xs  rounded-md bg-gray-100 text-black-500">Out of stock</div>
@@ -727,7 +957,7 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
             transition-all duration-300 ease-in-out ${isAnimating ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
         >
           {otherProducts.map((p, i) => {
-            const displayPrice = computeDisplayPrice(p);
+            const displayPrice = Number(computeDisplayPrice(p) || 0);
             const discountPercent = computeDiscountPercent(p);
             const outOfStock = Number(p?.stock ?? Infinity) <= 0;
             const isFavourited = favSet.has(String(p.id));
@@ -852,7 +1082,7 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {combopackProducts.map((p, i) => {
-                const displayPrice = computeDisplayPrice(p);
+                const displayPrice = Number(computeDisplayPrice(p) || 0);
                 const discountPercent = computeDiscountPercent(p);
                 const outOfStock = Number(p?.stock ?? Infinity) <= 0;
                 const isFavourited = favSet.has(String(p.id));
@@ -958,4 +1188,3 @@ export default function FilterableProductGrid({ onAddToCart, selectedCategory, i
     </div>
   );
 }
-

@@ -318,10 +318,11 @@ export default function ProductClient({ product }) {
 
   const currentImage = images && images.length ? images[currentIndex] : product.image_url || "/placeholder.png";
 
-  const discountPercent =
-    product.discountPrice && product.price
-      ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
-      : product.discount_percent ?? 0;
+const discountPercent =
+  Number(product.discountPrice) > 0 && Number(product.price) > 0
+    ? Math.round(((Number(product.price) - Number(product.discountPrice)) / Number(product.price)) * 100)
+    : (product.discount_percent ?? 0);
+
 
   const handleAddToCart = useCallback(
     (productToAdd) => {
@@ -366,10 +367,7 @@ export default function ProductClient({ product }) {
   };
   return (
     <div className="min-h-screen flex flex-col">
-      {/* <Header /> */}
-
       <main className="flex-1 container mx-auto px-4 py-6">
-        {/* Breadcrumb / Back */}
         <div className="mb-4">
           <Button variant="link" asChild className="pl-0">
             <button
@@ -377,7 +375,7 @@ export default function ProductClient({ product }) {
               className="flex items-center gap-2 text-sm"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Menu
+              {/* Back to Menu */}
             </button>
           </Button>
         </div>
@@ -433,28 +431,24 @@ export default function ProductClient({ product }) {
             {/* <div className="mb-4">
               <RatingStars rating={product.rating ?? 5} count={product.reviewCount ?? 0} size="md" />
             </div> */}
+           <div className="mb-6 pb-6 border-b border-border">
+  <div className="flex items-baseline gap-3 mb-2">
+    {Number(product.discountPrice) > 0 && (
+      <>
+        <span className="text-lg text-muted-foreground line-through">
+          Rs.{product.price}
+        </span>
+        <Badge variant="destructive">Save {discountPercent}%</Badge>
+      </>
+    )}
+  </div>
+  {product.isPrime && (
+    <Badge className="bg-prime text-prime-foreground">
+      Prime Free Delivery
+    </Badge>
+  )}
+</div>
 
-            {/* Price */}
-            <div className="mb-6 pb-6 border-b border-border">
-              <div className="flex items-baseline gap-3 mb-2">
-                <span className="text-3xl font-bold text-price">
-                  Rs.{product.discountPrice || product.price}
-                </span>
-                {discountPercent > 0 && (
-                  <>
-                    <span className="text-lg text-muted-foreground line-through">
-                      Rs.{product.price}
-                    </span>
-                    <Badge variant="destructive">Save {discountPercent}%</Badge>
-                  </>
-                )}
-              </div>
-              {product.isPrime && (
-                <Badge className="bg-prime text-prime-foreground">
-                  Prime Free Delivery
-                </Badge>
-              )}
-            </div>
 
             {/* Description */}
             <div className="mb-6">
@@ -569,11 +563,7 @@ export default function ProductClient({ product }) {
             </div>
           </div>
         </div>
-
-        {/* (No reviews in original file — kept content as-is) */}
       </main>
-
-      {/* <Footer /> */}
     </div>
   );
 }
