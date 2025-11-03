@@ -367,7 +367,7 @@ export default function Header({
   const { token, logout } = useAuth();
   const hasToken = Boolean(token);
   const { settings } = useSettings();
-  const logoSrc = settings?.logo_url || Logo;
+  const logoSrc = settings?.logo_url || "";
 
   // wishlist
   const { favorites = [] } = useWishlist() || {};
@@ -511,8 +511,10 @@ export default function Header({
               aria-label="Notifications"
               className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors inline-flex items-center justify-center"
             >
+              {hasToken&&<>
               <Bell className="h-5 w-5 text-gray-700" />
               <span className="absolute top-1.5 right-1.5 bg-red-500 rounded-full w-2 h-2" />
+              </>}
             </Link>
             {hasToken&&<Link
               href="/dashboard?tab=favourites"

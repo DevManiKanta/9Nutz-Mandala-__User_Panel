@@ -1,4 +1,6 @@
 
+
+
 // "use client";
 // import React, { useCallback, useMemo, useState } from "react";
 // import { Star, ShoppingCart, ArrowLeft, Truck, ShieldCheck, RotateCcw } from "lucide-react";
@@ -20,10 +22,8 @@
 
 // function extractYouTubeId(url) {
 //   if (!url || typeof url !== "string") return null;
-//   // common YouTube URL patterns: youtu.be/ID, youtube.com/watch?v=ID, youtube.com/shorts/ID, ...with params
 //   try {
 //     const s = url.trim();
-//     // quick checks
 //     const patterns = [
 //       /(?:youtube\.com\/shorts\/)([A-Za-z0-9_-]{4,})/,
 //       /(?:youtube\.com\/watch\?v=)([A-Za-z0-9_-]{4,})/,
@@ -35,12 +35,34 @@
 //       const m = s.match(re);
 //       if (m && m[1]) return m[1];
 //     }
-//     // fallback: try last path segment
 //     const u = new URL(s.startsWith("http") ? s : `https://${s}`);
 //     const seg = (u.pathname || "").split("/").filter(Boolean).pop();
 //     if (seg && /^[A-Za-z0-9_-]{4,}$/.test(seg)) return seg;
 //   } catch (e) {
 //     // ignore
+//   }
+//   return null;
+// }
+
+// /** Normalize a possible image value (string or object) to a URL string or null */
+// function normalizeUrl(val) {
+//   if (!val) return null;
+//   if (typeof val === "string") {
+//     const s = val.trim();
+//     if (!s) return null;
+//     return s;
+//   }
+//   if (typeof val === "object") {
+//     // common fields
+//     return (
+//       val.url ??
+//       val.image_url ??
+//       val.image ??
+//       val.src ??
+//       val.thumb ??
+//       val.path ??
+//       null
+//     );
 //   }
 //   return null;
 // }
@@ -53,52 +75,62 @@
 
 //   if (!product) return null;
 
+//   // Build images array robustly and dedupe
 //   const images = useMemo(() => {
 //     const out = [];
+//     const seen = new Set();
 
-//     if (product.imageUrl) out.push(String(product.imageUrl));
+//     const pushIf = (v) => {
+//       const url = normalizeUrl(v);
+//       if (!url) return;
+//       const key = url;
+//       if (seen.has(key)) return;
+//       seen.add(key);
+//       out.push(String(url));
+//     };
+
+//     pushIf(product.imageUrl);
+//     pushIf(product.image);
+//     pushIf(product.image_url);
 
 //     if (Array.isArray(product.images) && product.images.length > 0) {
-//       product.images.forEach((it) => {
-//         if (!it) return;
-//         if (typeof it === "string") {
-//           if (!out.includes(it)) out.push(it);
-//         } else if (typeof it === "object") {
-//           const url = it.image_url ?? it.url ?? it.image ?? null;
-//           if (url && !out.includes(url)) out.push(String(url));
-//         }
-//       });
+//       product.images.forEach((it) => pushIf(it));
 //     }
 
-//     if (out.length === 0) {
-//       const fallback = product.image_url ?? product.image ?? null;
-//       if (fallback) out.push(String(fallback));
-//     }
+  
+//     const fallback = product.image_url ?? product.image ?? product.imageUrl ?? null;
+//     pushIf(fallback);
 
 //     return out;
 //   }, [product]);
-
-//   // Determine YouTube embed URL
+//      console.log("product",product)
+//   // Determine YouTube embed URL (if any)
 //   const videoEmbedUrl = useMemo(() => {
-//     // product may provide video fields (video_url, video)
 //     const candidate =
 //       product.video_url ??
 //       product.video ??
 //       (Array.isArray(product.videos) && product.videos.length ? product.videos[0] : null);
 
-//     // If candidate exists and is a YouTube URL, extract id
 //     const youtubeId = extractYouTubeId(candidate);
 //     if (youtubeId) {
-//       // use modest branding and allow fullscreen; do not autoplay by default
-//       return `https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`;
+//       // return `https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`;
 //     }
-
-//     // If product didn't provide a YouTube link, as requested: use the specific YouTube Shorts URL you provided.
-//     // NOTE: we embed the ID below (G--NLgSNCmE).
-//     const fallbackId = "G--NLgSNCmE";
+//       // https://youtu.be/Z-k9TGQYjv8
+//     // preserve original fallback id you had
+//     const fallbackId = "Z-k9TGQYjv8";
+//     // Only return fallback if there is at least some candidate (to avoid showing video tile unnecessarily)
+//     // but user wanted to show video beside images — we keep fallback available always as you had previously
 //     return `https://www.youtube.com/embed/${fallbackId}?rel=0&modestbranding=1`;
 //   }, [product]);
 
+//   // Video presence flag: if product provided an explicit video field then show as a selectable tile.
+//   const hasExplicitVideo = useMemo(() => {
+//     const candidate =
+//       product.video_url ??
+//       product.video ??
+//       (Array.isArray(product.videos) && product.videos.length ? product.videos[0] : null);
+//     return Boolean(candidate);
+//   }, [product]);
 //   const [currentIndex, setCurrentIndex] = useState(0);
 
 //   React.useEffect(() => {
@@ -109,13 +141,14 @@
 //     if (currentIndex >= images.length) setCurrentIndex(0);
 //   }, [images, currentIndex]);
 
-//   const currentImage = images && images.length ? images[currentIndex] : product.image_url || "/placeholder.png";
-
-// const discountPercent =
-//   Number(product.discountPrice) > 0 && Number(product.price) > 0
-//     ? Math.round(((Number(product.price) - Number(product.discountPrice)) / Number(product.price)) * 100)
-//     : (product.discount_percent ?? 0);
-
+//   const currentImage = images && images.length && currentIndex >= 0
+//     ? images[currentIndex]
+//     : product.image_url || "";
+//      console.log("images",)
+//   const discountPercent =
+//     Number(product.discountPrice) > 0 && Number(product.price) > 0
+//       ? Math.round(((Number(product.price) - Number(product.discountPrice)) / Number(product.price)) * 100)
+//       : (product.discount_percent ?? 0);
 
 //   const handleAddToCart = useCallback(
 //     (productToAdd) => {
@@ -158,6 +191,9 @@
 //       setCurrentIndex((prev) => Math.min(images.length - 1, prev + 1));
 //     }
 //   };
+
+//   // fallback main image on error
+//   const [mainImgError, setMainImgError] = useState(false);
 //   return (
 //     <div className="min-h-screen flex flex-col">
 //       <main className="flex-1 container mx-auto px-4 py-6">
@@ -168,22 +204,35 @@
 //               className="flex items-center gap-2 text-sm"
 //             >
 //               <ArrowLeft className="h-4 w-4 mr-1" />
-//               {/* Back to Menu */}
 //             </button>
 //           </Button>
 //         </div>
 
 //         <div className="grid lg:grid-cols-12 gap-8">
-//           {/* Image Gallery (left) */}
 //           <div className="lg:col-span-5">
 //             <div className="sticky top-24">
-//               {/* Main image */}
-//               <div className="border border-border rounded-lg mb-4 aspect-square overflow-hidden bg-muted">
-//                 <img
-//                   src={currentImage}
-//                   alt={product.name}
-//                   className="w-full h-full object-contain p-4"
-//                 />
+//               <div className="border border-border rounded-lg mb-4 aspect-square overflow-hidden bg-muted relative">
+//                 {/* If video selected (currentIndex === -1) show iframe */}
+//                 {currentIndex === -1 ? (
+//                   <iframe
+//                     title={`${product.name} video`}
+//                     src={videoEmbedUrl}
+//                     className="w-full h-full"
+//                     allowFullScreen
+//                   />
+//                 ) : (
+//                   <>
+//                     <img
+//                       src={mainImgError ? "" : currentImage || ""}
+//                       alt={product.name}
+//                       className="w-full h-full object-contain p-4"
+//                       onError={(e) => {
+//                         setMainImgError(true);
+//                       }}
+//                     />
+//                   </>
+//                 )}
+
 //                 {discountPercent > 0 && (
 //                   <div className="absolute top-4 left-4">
 //                     <Badge variant="destructive">Save {discountPercent}%</Badge>
@@ -191,26 +240,60 @@
 //                 )}
 //               </div>
 
-//               {/* Thumbnails */}
-//               {images.length > 1 && (
-//                 <div className="grid grid-cols-6 gap-2">
+//               {/* Thumbnails + optional video tile */}
+//               {(images.length > 0 || videoEmbedUrl) && (
+//                 <div className="grid grid-cols-6 gap-2 items-center">
 //                   {images.map((src, idx) => (
 //                     <button
 //                       key={idx}
-//                       onClick={() => setCurrentIndex(idx)}
+//                       onClick={() => {
+//                         setCurrentIndex(idx);
+//                         setMainImgError(false);
+//                       }}
 //                       onKeyDown={(e) => handleThumbKey(e, idx)}
 //                       aria-pressed={idx === currentIndex}
-//                       className={`border rounded overflow-hidden aspect-square ${
+//                       className={`border rounded overflow-hidden aspect-square focus:outline-none ${
 //                         idx === currentIndex ? "border-primary ring-2 ring-primary" : "border-border"
 //                       }`}
+//                       title={`View image ${idx + 1}`}
 //                     >
 //                       <img
 //                         src={src}
 //                         alt={`${product.name} ${idx + 1}`}
 //                         className="w-full h-full object-cover"
+//                         onError={(e) => {
+//                           // hide broken thumbnail by setting to placeholder
+//                           // e.currentTarget.src = "/placeholder.png";
+//                         }}
 //                       />
 //                     </button>
 //                   ))}
+
+//                   {/* Video tile: show only if there's an explicit video OR you want fallback */}
+//                   {videoEmbedUrl && (
+//                     <button
+//                       key="video-tile"
+//                       onClick={() => setCurrentIndex(-1)}
+//                       onKeyDown={(e) => {
+//                         if (e.key === "Enter" || e.key === " ") {
+//                           e.preventDefault();
+//                           setCurrentIndex(-1);
+//                         }
+//                       }}
+//                       aria-pressed={currentIndex === -1}
+//                       className={`border rounded overflow-hidden aspect-square flex items-center justify-center p-0 focus:outline-none ${
+//                         currentIndex === -1 ? "border-primary ring-2 ring-primary" : "border-border"
+//                       }`}
+//                       title="Play product video"
+//                     >
+//                       {/* small embedded iframe preview (kept light) */}
+//                       <div className="w-full h-full bg-black/5 flex items-center justify-center">
+//                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden>
+//                           <path d="M8 5v14l11-7L8 5z" fill="currentColor" />
+//                         </svg>
+//                       </div>
+//                     </button>
+//                   )}
 //                 </div>
 //               )}
 //             </div>
@@ -224,24 +307,23 @@
 //             {/* <div className="mb-4">
 //               <RatingStars rating={product.rating ?? 5} count={product.reviewCount ?? 0} size="md" />
 //             </div> */}
-//            <div className="mb-6 pb-6 border-b border-border">
-//   <div className="flex items-baseline gap-3 mb-2">
-//     {Number(product.discountPrice) > 0 && (
-//       <>
-//         <span className="text-lg text-muted-foreground line-through">
-//           Rs.{product.price}
-//         </span>
-//         <Badge variant="destructive">Save {discountPercent}%</Badge>
-//       </>
-//     )}
-//   </div>
-//   {product.isPrime && (
-//     <Badge className="bg-prime text-prime-foreground">
-//       Prime Free Delivery
-//     </Badge>
-//   )}
-// </div>
-
+//             <div className="mb-6 pb-6 border-b border-border">
+//               <div className="flex items-baseline gap-3 mb-2">
+//                 {Number(product.discountPrice) > 0 && (
+//                   <>
+//                     <span className="text-lg text-muted-foreground line-through">
+//                       Rs.{product.price}
+//                     </span>
+//                     <Badge variant="destructive">Save {discountPercent}%</Badge>
+//                   </>
+//                 )}
+//               </div>
+//               {product.isPrime && (
+//                 <Badge className="bg-prime text-prime-foreground">
+//                   Prime Free Delivery
+//                 </Badge>
+//               )}
+//             </div>
 
 //             {/* Description */}
 //             <div className="mb-6">
@@ -270,7 +352,7 @@
 //             </div>
 
 //             {/* Delivery Info */}
-//             <div className="space-y-3 mb-6 p-4 bg-muted rounded">
+//             {/* <div className="space-y-3 mb-6 p-4 bg-muted rounded">
 //               <div className="flex items-center gap-3 text-sm">
 //                 <Truck className="h-5 w-5 text-primary" />
 //                 <span>Free delivery on orders over $25</span>
@@ -283,7 +365,7 @@
 //                 <ShieldCheck className="h-5 w-5 text-primary" />
 //                 <span>2-year warranty included</span>
 //               </div>
-//             </div>
+//             </div> */}
 //           </div>
 
 //           {/* Buy Box (right) */}
@@ -331,17 +413,10 @@
 //               <div className="space-y-2">
 //                 <Button
 //                   onClick={() => handleAddToCart(product)}
-//                   className="w-full bg-cta hover:bg-cta-hover text-cta-foreground"
+//                   className="w-full bg-cta hover:bg-green-hover text-cta-foreground"
 //                   disabled={Number(product.stock ?? 0) <= 0 || isAdding}
 //                 >
 //                   {isAdding ? "Adding..." : "Add to Cart"}
-//                 </Button>
-//                 <Button
-//                   // Keep original Buy Now button behavior (visual only here)
-//                   className="w-full"
-//                   variant="outline"
-//                 >
-//                   Buy Now
 //                 </Button>
 //               </div>
 
@@ -351,7 +426,7 @@
 //                   <ShieldCheck className="h-4 w-4" />
 //                   <span>Secure transaction</span>
 //                 </div>
-//                 <p>Ships from and sold by amazoon.</p>
+//                 {/* <p>Ships from and sold by amazoon.</p> */}
 //               </div>
 //             </div>
 //           </div>
@@ -360,8 +435,6 @@
 //     </div>
 //   );
 // }
-
-
 
 
 "use client";
@@ -407,8 +480,8 @@ function extractYouTubeId(url) {
   return null;
 }
 
-/** Normalize a possible image value (string or object) to a URL string or null */
-function normalizeUrl(val) {
+/** normalize string/object -> string (may still be relative) */
+function normalizeRaw(val) {
   if (!val) return null;
   if (typeof val === "string") {
     const s = val.trim();
@@ -416,7 +489,6 @@ function normalizeUrl(val) {
     return s;
   }
   if (typeof val === "object") {
-    // common fields
     return (
       val.url ??
       val.image_url ??
@@ -428,6 +500,60 @@ function normalizeUrl(val) {
     );
   }
   return null;
+}
+
+/**
+ * Resolve URL to absolute when possible.
+ * - If `candidate` starts with http(s) => return as-is
+ * - Else if `product._raw.imageUrl` or `product.raw.image_url` exists and looks absolute,
+ *   glue the filename from candidate onto that base.
+ * - Else return candidate unchanged (fallback).
+ */
+function resolveToAbsolute(candidate, product) {
+  if (!candidate) return null;
+  const s = candidate.trim();
+  if (!s) return null;
+  // already absolute
+  if (/^https?:\/\//i.test(s)) return s;
+
+  // if it looks like an absolute path from server (starts with /), return as-is
+  if (s.startsWith("/")) return s;
+
+  // try to find a reference absolute url from product (several variants)
+  const ref =
+    normalizeRaw(product?._raw?.imageUrl) ||
+    normalizeRaw(product?.raw?.image_url) ||
+    normalizeRaw(product?.raw?.imageUrl) ||
+    normalizeRaw(product?._raw?.image_url) ||
+    null;
+
+  if (ref && /^https?:\/\//i.test(ref)) {
+    // If candidate already contains a filename, use that filename and replace last segment of ref
+    try {
+      const fileName = s.split("/").pop();
+      if (!fileName) return ref;
+      // derive base by removing last path segment from ref
+      const base = ref.replace(/\/[^\/]+$/, "");
+      return `${base}/${fileName}`;
+    } catch {
+      return ref;
+    }
+  }
+
+  // As last attempt, if candidate looks like "products/xxx" but product has image field full URL in raw.raw.image_url
+  const altRef = normalizeRaw(product?.raw?.image_url) || normalizeRaw(product?._raw?.image_url);
+  if (altRef && /^https?:\/\//i.test(altRef)) {
+    try {
+      const fileName = s.split("/").pop();
+      const base = altRef.replace(/\/[^\/]+$/, "");
+      return `${base}/${fileName}`;
+    } catch {
+      return altRef;
+    }
+  }
+
+  // nothing to resolve to — return candidate unchanged
+  return s;
 }
 
 export default function ProductClient({ product }) {
@@ -444,46 +570,50 @@ export default function ProductClient({ product }) {
     const seen = new Set();
 
     const pushIf = (v) => {
-      const url = normalizeUrl(v);
-      if (!url) return;
-      const key = url;
-      if (seen.has(key)) return;
-      seen.add(key);
-      out.push(String(url));
+      const raw = normalizeRaw(v);
+      if (!raw) return;
+      const resolved = resolveToAbsolute(raw, product);
+      if (!resolved) return;
+      if (seen.has(resolved)) return;
+      seen.add(resolved);
+      out.push(String(resolved));
     };
 
-    pushIf(product.imageUrl);
-    pushIf(product.image); // also check these fields
-    pushIf(product.image_url);
+    // Prefer fully-qualified URLs from raw/_raw first (these often contain complete URL)
+    pushIf(product?._raw?.imageUrl);
+    pushIf(product?.raw?.image_url);
+    pushIf(product?.raw?.imageUrl);
+    pushIf(product?._raw?.image_url);
 
+    // Then the top-level fields (may be relative)
+    pushIf(product.imageUrl);
+    pushIf(product.image_url);
+    pushIf(product.image);
+
+    // Also include any array of images
     if (Array.isArray(product.images) && product.images.length > 0) {
       product.images.forEach((it) => pushIf(it));
     }
 
-    // some APIs return videos array with thumbnails; but keep images first
-    // fallback single fields
-    const fallback = product.image_url ?? product.image ?? product.imageUrl ?? null;
+    // final fallback: use product.raw?.image_url or product._raw?.imageUrl directly (already pushed above, but keep)
+    const fallback = normalizeRaw(product.image_url) ?? normalizeRaw(product.image) ?? normalizeRaw(product.imageUrl) ?? null;
     pushIf(fallback);
-
     return out;
   }, [product]);
-
+  console.log("Product",product)
   // Determine YouTube embed URL (if any)
   const videoEmbedUrl = useMemo(() => {
     const candidate =
-      product.video_url ??
-      product.video ??
+      product.videoUrl ??
+      product.videoUrl ??
       (Array.isArray(product.videos) && product.videos.length ? product.videos[0] : null);
 
     const youtubeId = extractYouTubeId(candidate);
     if (youtubeId) {
       // return `https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`;
     }
-      // https://youtu.be/Z-k9TGQYjv8
     // preserve original fallback id you had
     const fallbackId = "Z-k9TGQYjv8";
-    // Only return fallback if there is at least some candidate (to avoid showing video tile unnecessarily)
-    // but user wanted to show video beside images — we keep fallback available always as you had previously
     return `https://www.youtube.com/embed/${fallbackId}?rel=0&modestbranding=1`;
   }, [product]);
 
@@ -495,8 +625,6 @@ export default function ProductClient({ product }) {
       (Array.isArray(product.videos) && product.videos.length ? product.videos[0] : null);
     return Boolean(candidate);
   }, [product]);
-
-  // currentIndex: 0..images.length-1 for images, -1 selected video
   const [currentIndex, setCurrentIndex] = useState(0);
 
   React.useEffect(() => {
@@ -507,9 +635,19 @@ export default function ProductClient({ product }) {
     if (currentIndex >= images.length) setCurrentIndex(0);
   }, [images, currentIndex]);
 
-  const currentImage = images && images.length && currentIndex >= 0
-    ? images[currentIndex]
-    : product.image_url || "";
+  // Ensure currentImage is a resolved absolute (if available)
+  const currentImage =
+    images && images.length && currentIndex >= 0
+      ? images[currentIndex]
+      : // fallback: try to resolve top-level fields to absolute as well
+        resolveToAbsolute(
+          normalizeRaw(product.imageUrl) ??
+            normalizeRaw(product.image_url) ??
+            normalizeRaw(product.image) ??
+            null,
+          product
+        ) ??
+        "";
 
   const discountPercent =
     Number(product.discountPrice) > 0 && Number(product.price) > 0
@@ -520,7 +658,7 @@ export default function ProductClient({ product }) {
     (productToAdd) => {
       if (!productToAdd) return;
       const stockVal = Number(productToAdd?.stock ?? Infinity);
-      if (!Number.isNaN(stockVal) && stockVal <= 0) return;
+      if (!Number.isFinite(stockVal) || stockVal <= 0) return;
       setIsAdding(true);
 
       try {
@@ -560,7 +698,6 @@ export default function ProductClient({ product }) {
 
   // fallback main image on error
   const [mainImgError, setMainImgError] = useState(false);
-
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 container mx-auto px-4 py-6">
@@ -571,16 +708,13 @@ export default function ProductClient({ product }) {
               className="flex items-center gap-2 text-sm"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
-              {/* Back to Menu */}
             </button>
           </Button>
         </div>
 
         <div className="grid lg:grid-cols-12 gap-8">
-          {/* Image Gallery (left) */}
           <div className="lg:col-span-5">
             <div className="sticky top-24">
-              {/* Main image / video container */}
               <div className="border border-border rounded-lg mb-4 aspect-square overflow-hidden bg-muted relative">
                 {/* If video selected (currentIndex === -1) show iframe */}
                 {currentIndex === -1 ? (
@@ -593,13 +727,11 @@ export default function ProductClient({ product }) {
                 ) : (
                   <>
                     <img
-                      src={mainImgError ? "/placeholder.png" : currentImage || "/placeholder.png"}
+                      src={mainImgError ? "" : currentImage || ""}
                       alt={product.name}
                       className="w-full h-full object-contain p-4"
-                      onError={(e) => {
+                      onError={() => {
                         setMainImgError(true);
-                        // optionally clear src to avoid repeated errors
-                        e.currentTarget.src = "/placeholder.png";
                       }}
                     />
                   </>
@@ -633,14 +765,12 @@ export default function ProductClient({ product }) {
                         src={src}
                         alt={`${product.name} ${idx + 1}`}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          // hide broken thumbnail by setting to placeholder
-                          e.currentTarget.src = "/placeholder.png";
+                        onError={() => {
+                          // ignored for thumbnails (we keep them hidden by not pushing broken ones)
                         }}
                       />
                     </button>
                   ))}
-
                   {/* Video tile: show only if there's an explicit video OR you want fallback */}
                   {videoEmbedUrl && (
                     <button
@@ -675,10 +805,6 @@ export default function ProductClient({ product }) {
           <div className="lg:col-span-4">
             <h1 className="text-2xl font-bold mb-4">{product.name}</h1>
 
-            {/* Rating */}
-            {/* <div className="mb-4">
-              <RatingStars rating={product.rating ?? 5} count={product.reviewCount ?? 0} size="md" />
-            </div> */}
             <div className="mb-6 pb-6 border-b border-border">
               <div className="flex items-baseline gap-3 mb-2">
                 {Number(product.discountPrice) > 0 && (
@@ -722,22 +848,6 @@ export default function ProductClient({ product }) {
                 </li>
               </ul>
             </div>
-
-            {/* Delivery Info */}
-            {/* <div className="space-y-3 mb-6 p-4 bg-muted rounded">
-              <div className="flex items-center gap-3 text-sm">
-                <Truck className="h-5 w-5 text-primary" />
-                <span>Free delivery on orders over $25</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <RotateCcw className="h-5 w-5 text-primary" />
-                <span>30-day returns</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-                <span>2-year warranty included</span>
-              </div>
-            </div> */}
           </div>
 
           {/* Buy Box (right) */}
@@ -766,7 +876,6 @@ export default function ProductClient({ product }) {
                 <label className="text-sm font-semibold block mb-2">
                   Quantity:
                 </label>
-                {/* keeps original select behavior (not wired to add quantity) */}
                 <Select defaultValue="1">
                   <SelectTrigger>
                     <SelectValue />
@@ -780,25 +889,21 @@ export default function ProductClient({ product }) {
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Buttons */}
-              <div className="space-y-2">
+              <div className="space-y-2" >
                 <Button
                   onClick={() => handleAddToCart(product)}
-                  className="w-full bg-cta hover:bg-green-hover text-cta-foreground"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
                   disabled={Number(product.stock ?? 0) <= 0 || isAdding}
                 >
                   {isAdding ? "Adding..." : "Add to Cart"}
                 </Button>
               </div>
 
-              {/* Security */}
               <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground">
                 <div className="flex items-center gap-2 mb-2">
                   <ShieldCheck className="h-4 w-4" />
                   <span>Secure transaction</span>
                 </div>
-                {/* <p>Ships from and sold by amazoon.</p> */}
               </div>
             </div>
           </div>
