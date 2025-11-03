@@ -451,7 +451,7 @@ function toFullImageUrl(img) {
 /** Public API call */
 export async function getCategoriesPublicAPI() {
   try {
-    const res = await axios.get(`${Login_API_BASE}/category/show`, {
+    const res = await apiAxios.get(`/category/show`, {
       headers: { "Content-Type": "application/json" },
     });
     return Array.isArray(res.data?.data) ? res.data.data : [];
@@ -481,7 +481,7 @@ export default function Hero() {
 
     const fetchBanners = async () => {
       try {
-        const res = await axios.get(`${Login_API_BASE}/list-banners`, {
+        const res = await apiAxios.get(`/list-banners`, {
           headers: { "Content-Type": "application/json" },
         });
         if (cancelled) return;

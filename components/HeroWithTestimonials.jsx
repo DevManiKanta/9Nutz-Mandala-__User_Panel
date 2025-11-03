@@ -180,6 +180,7 @@ import "swiper/css/pagination";
 import { Star } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
 import { Login_API_BASE } from "@/lib/api";
+import apiAxios from "@/lib/api";
 
 export default function HeroWithTestimonials() {
   const [banners, setBanners] = useState([]);
@@ -191,51 +192,51 @@ export default function HeroWithTestimonials() {
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchBanners() {
-      try {
-        const res = await fetch(`${API_BASE}/show-all-sales-banner`, {
-          headers: { "Content-Type": "application/json" },
-        });
 
-        const text = await res.text();
-        const json = text ? JSON.parse(text) : {};
+async function fetchBanners() {
+  try {
+    const res = await apiAxios.get(`/show-all-sales-banner`, {
+      headers: { "Content-Type": "application/json" },
+    });
 
-        if (!res.ok) {
-          throw new Error(json?.message || `API error ${res.status}`);
-        }
+    // Axios automatically parses JSON, so we can directly access res.data
+    const json = res.data || {};
+    const rows = Array.isArray(json?.data) ? json.data : [];
 
-        const rows = Array.isArray(json?.data) ? json.data : [];
-        const mapped = rows.map((r) => {
-          // Prefer full `url` from API; fallback to image_url/image; ensure it's an absolute URL
-          const maybeFull = r.url || r.image_url || r.image || "";
-          const image_url = /^https?:\/\//.test(maybeFull)
-            ? maybeFull
-            : maybeFull
-            ? `${ASSET_BASE}/${maybeFull.replace(/^\/+/, "")}`
-            : "";
+    const mapped = rows.map((r) => {
+      // Prefer full `url` from API; fallback to image_url/image
+      const maybeFull = r.url || r.image_url || r.image || "";
+      const image_url = /^https?:\/\//.test(maybeFull)
+        ? maybeFull
+        : maybeFull
+        ? `${ASSET_BASE}/${maybeFull.replace(/^\/+/, "")}`
+        : "";
 
-          return {
-            id: r.id,
-            title: r.title,
-            subtitle: r.subtitle,
-            link: r.link,
-            image_url,
-          };
-        });
+      return {
+        id: r.id,
+        title: r.title,
+        subtitle: r.subtitle,
+        link: r.link,
+        image_url,
+      };
+    });
 
-        if (!cancelled) {
-          setBanners(mapped);
-          // toast.success(`Loaded ${mapped.length} hero banner(s)`);
-          setLoading(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          toast.error(`Failed to load banners: ${err.message}`);
-          setLoading(false);
-        }
-      }
+    if (!cancelled) {
+      setBanners(mapped);
+      setLoading(false);
+      // toast.success(`Loaded ${mapped.length} hero banner(s)`);
     }
-
+  } catch (err) {
+    if (!cancelled) {
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to load banners.";
+      toast.error(`Failed to load banners: ${message}`);
+      setLoading(false);
+    }
+  }
+}
     fetchBanners();
     return () => {
       cancelled = true;
